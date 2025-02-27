@@ -68,7 +68,6 @@ bool EngineData::enablerendering = true;
 SDL_Cursor* EngineData::handCursor = nullptr;
 SDL_Cursor* EngineData::arrowCursor = nullptr;
 SDL_Cursor* EngineData::ibeamCursor = nullptr;
-Semaphore EngineData::mainthread_initialized(0);
 
 bool lightspark::isEventLoopThread()
 {
@@ -293,19 +292,16 @@ bool initSDL()
 	return sdl_available;
 }
 /* main loop handling */
-static int mainloop_runner(void* d)
+static int mainloop_runner(IEventLoop* th)
 {
-	IEventLoop* th = (IEventLoop*)d;
 	if (!initSDL())
 	{
 		LOG(LOG_ERROR,"Unable to initialize SDL:"<<SDL_GetError());
-		EngineData::mainthread_initialized.signal();
 		return 0;
 	}
 	else
 	{
 		EngineData::mainthread_running = true;
-		EngineData::mainthread_initialized.signal();
 		Optional<LSEventStorage> event;
 		while (event = th->waitEvent(getSys()), event.hasValue())
 		{
@@ -377,8 +373,7 @@ void EngineData::startSDLEventTicker(SystemState* sys)
 bool EngineData::startSDLMain(EventLoop* eventLoop)
 {
 	assert(!mainLoopThread);
-	mainLoopThread = SDL_CreateThread(mainloop_runner,"mainloop",eventLoop);
-	mainthread_initialized.wait();
+	mainloop_runner(eventLoop);
 	return mainthread_running;
 }
 
@@ -617,8 +612,10 @@ void EngineData::checkForNativeAIRExtensions(std::vector<tiny_string>& extension
 				if (g_file_test(file,G_FILE_TEST_IS_DIR))
 					continue;
 				tiny_string s=file;
-#ifdef _WIN32
+#if   defined(_WIN32)
 				const char* suffix = ".dll";
+#elif defined(__APPLE__)
+				const char* suffix = ".dylib"
 #else
 				const char* suffix = ".so";
 #endif

@@ -191,7 +191,6 @@ public:
 	static bool needinit;
 	static bool enablerendering;
 	static bool mainthread_running;
-	static Semaphore mainthread_initialized;
 	static bool startSDLMain(EventLoop* eventLoop);
 
 	virtual bool FileExists(SystemState* sys,const tiny_string& filename, bool isfullpath);
