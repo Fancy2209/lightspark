@@ -26,7 +26,7 @@
 #include "scripting/abc.h"
 #include "scripting/argconv.h"
 #include "parsing/tags.h"
-#include <glib.h>
+#include "utils/path.h"
 
 using namespace lightspark;
 
@@ -459,11 +459,10 @@ void ApplicationDomain::setOrigin(const tiny_string& u, const tiny_string& filen
 	if(origin.getPathFile() == "" && filename != "")
 	{
 		tiny_string fileurl;
-		if (g_path_is_absolute(filename.raw_buf()))
+		if (Path(filename).isAbsolute())
 		{
-			gchar* uri = g_filename_to_uri(filename.raw_buf(), nullptr,nullptr);
+			std::string uri = URLInfo::encode("file://" + std::string(filename.raw_buf()), URLInfo::ENCODE_URI);
 			fileurl = uri;
-			g_free(uri);
 		}
 		else
 			fileurl = filename;

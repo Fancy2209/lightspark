@@ -40,3 +40,4 @@ tests/tamarin
 # QtCreator
 *.autosave
 CMakeLists.txt.user*
+.cache

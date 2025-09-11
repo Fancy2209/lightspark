@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "compat.h"
 #include "scripting/abc.h"
 #include "parsing/amf3_generator.h"
 #include "scripting/toplevel/IFunction.h"
@@ -106,7 +107,7 @@ asAtom Amf3Deserializer::parseDouble() const
 		if(!input->readByte(tmpPtr[i]))
 			throw ParseException("Not enough data to parse double");
 	}
-	tmp.dummy=GINT64_FROM_BE(tmp.dummy);
+	tmp.dummy=LS_UINT64_TO_LE(tmp.dummy);
 	
 	return asAtomHandler::fromNumber(input->getInstanceWorker(),tmp.val,false);
 }
@@ -125,7 +126,7 @@ asAtom Amf3Deserializer::parseDate() const
 		if(!input->readByte(tmpPtr[i]))
 			throw ParseException("Not enough data to parse date");
 	}
-	tmp.dummy=GINT64_FROM_BE(tmp.dummy);
+	tmp.dummy=LS_UINT64_TO_LE(tmp.dummy);
 	Date* dt = Class<Date>::getInstanceS(input->getInstanceWorker());
 	dt->MakeDateFromMilliseconds((int64_t)tmp.val);
 	return asAtomHandler::fromObject(dt);

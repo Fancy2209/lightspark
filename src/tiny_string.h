@@ -502,7 +502,7 @@ inline T convertToNumber(const tiny_string& str)
 template<typename T, EnableIf<std::is_floating_point<T>::value, bool>>
 inline T convertToNumber(const tiny_string& str)
 {
-	auto num = std::stold(str);
+	auto num = std::stold(std::string(str.raw_buf()));
 	if (num > std::numeric_limits<T>::max())
 		throw std::out_of_range("Converted number is too big for T");
 	if (num < std::numeric_limits<T>::lowest())

@@ -17,8 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include <glib.h>
-#include <glib/gstdio.h>
 #include "version.h"
 #include "backends/security.h"
 #include "backends/config.h"
@@ -30,6 +28,7 @@
 #include "compat.h"
 #include "flash/utils/ByteArray.h"
 #include "scripting/flash/display/RootMovieClip.h"
+#include <cstdlib>
 #include <sys/stat.h>
 #include "parsing/streams.h"
 #include "launcher.h"
@@ -687,9 +686,8 @@ int main(int argc, char* argv[])
 	//When running in a local sandbox, set the root URL to the current working dir
 	else if(sandboxType != SecurityManager::REMOTE)
 	{
-		char* baseurl = g_filename_to_uri(fs::currentPath().rawBuf(),nullptr,nullptr);
+		string baseurl = URLInfo::encode(std::string("file://") + fs::currentPath().rawBuf(), URLInfo::ENCODE_URI);
 		string cwdStr = string(baseurl);
-		free(baseurl);
 		cwdStr += "/";
 		sys->mainClip->setOrigin(cwdStr, fileName);
 	}
@@ -720,7 +718,7 @@ int main(int argc, char* argv[])
 		sys->setCookies(HTTPcookie);
 
 	// create path for shared object local storage
-	Path homeDir(g_get_home_dir());
+	Path homeDir(getenv("HOME"));
 	// remove home dir, if file is located below home dir
 	Path fileDataPath = fs::relative(absPath, homeDir);
 

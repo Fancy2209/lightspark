@@ -17,7 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include <glib.h>
 #include <string>
 #include <sys/stat.h>
 
@@ -25,6 +24,8 @@
 #include "compat.h"
 #include "logger.h"
 #include "exceptions.h"
+#include "utils/path.h"
+#include "utils/filesystem.h"
 
 #include <cstring>
 
@@ -81,10 +82,10 @@ Config::Config():
 	parser(nullptr),
 	//CONFIGURATION FILENAME AND SEARCH DIRECTORIES
 	configFilename("lightspark.conf"),
-	systemConfigDirectories(g_get_system_config_dirs()),userConfigDirectory(g_get_user_config_dir()),
+	systemConfigDirectory(std::string(SDL_GetBasePath()) + "/.config"),userConfigDirectory(std::string(SDL_GetBasePath()) + "/.config"),
 	//DEFAULT SETTINGS
-	defaultCacheDirectory((string) g_get_user_cache_dir() + G_DIR_SEPARATOR_S + "lightspark"),
-	cacheDirectory(defaultCacheDirectory),cachePrefix("cache"),userDataDirectory((string)g_get_user_data_dir() + G_DIR_SEPARATOR_S + "lightspark"),
+	defaultCacheDirectory((string) SDL_GetBasePath() + "/.cache/" + "lightspark"),
+	cacheDirectory(defaultCacheDirectory),cachePrefix("cache"),userDataDirectory(std::string(SDL_GetBasePath()) + "/.config/" + "lightspark"),
 	renderingEnabled(true)
 {
 #ifdef _WIN32
@@ -94,22 +95,11 @@ Config::Config():
 #endif
 
 	//Try system configs first
-	string sysDir;
-	const char* const* cursor = systemConfigDirectories;
-	while(*cursor != nullptr)
-	{
-		sysDir = *cursor;
-		parser = new ConfigParser(sysDir + G_DIR_SEPARATOR_S + configFilename);
-		while(parser->read())
-			handleEntry();
-		delete parser;
-		parser = nullptr;
-
-		++cursor;
-	}
+	string sysDir = systemConfigDirectory;
+	sysDir += "/" + configFilename;
 
 	//Try user config next
-	parser = new ConfigParser(userConfigDirectory + G_DIR_SEPARATOR_S + configFilename);
+	parser = new ConfigParser(userConfigDirectory + '/' + configFilename);
 	while(parser->read())
 		handleEntry();
 	delete parser;
@@ -122,26 +112,26 @@ Config::Config():
 #endif
 
 	//If cache dir doesn't exist, create it
-	if (g_mkdir_with_parents(cacheDirectory.c_str(),S_IRUSR | S_IWUSR | S_IXUSR))
+	if (FileSystem::createDirs(cacheDirectory.c_str()))
 	{
 		LOG(LOG_INFO, "Could not create cache directory, falling back to default cache directory: " <<
 				defaultCacheDirectory);
 		cacheDirectory = defaultCacheDirectory;
 	}
-	dataDirectory = cacheDirectory+G_DIR_SEPARATOR_S+"files";
-	if (g_mkdir_with_parents(dataDirectory.c_str(),S_IRUSR | S_IWUSR | S_IXUSR))
+	dataDirectory = cacheDirectory+'/'+"files";
+	if (FileSystem::createDirs(dataDirectory.c_str()))
 	{
 		LOG(LOG_INFO, "Could not create data directory, storing user data may not be possible");
 		dataDirectory = "";
 	}
 	else
 	{
-		dataDirectory += G_DIR_SEPARATOR_S;
+		dataDirectory += '/';
 		dataDirectory +="cXXXXXX";
 		char* tmpdir = new char[dataDirectory.length()+100];
 		strncpy(tmpdir,dataDirectory.c_str(),dataDirectory.length());
 		tmpdir[dataDirectory.length()] = 0x00;
-		tmpdir =g_mkdtemp(tmpdir);
+		FileSystem::createDir(tmpdir);
 		if (!tmpdir)
 		{
 			LOG(LOG_INFO, "Could not create data directory, storing user data may not be possible");

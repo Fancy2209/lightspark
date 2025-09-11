@@ -32,7 +32,6 @@
 #include "compat.h"
 #include <sstream>
 #include <unistd.h>
-#include <glib.h> // for screenshot file
 
 #ifdef _WIN32
 #   define WIN32_LEAN_AND_MEAN
@@ -758,6 +757,7 @@ void RenderThread::renderTextureToFrameBuffer
 }
 void RenderThread::generateScreenshot()
 {
+#if 0
 	char* buf = new char[windowWidth*windowHeight*3];
 	if (!buf)
 	{
@@ -803,6 +803,7 @@ void RenderThread::generateScreenshot()
 	delete[] buf;
 	LOG(LOG_INFO,"screenshot generated:"<<name_used);
 	g_free(name_used);
+#endif
 	screenshotneeded=false;
 }
 

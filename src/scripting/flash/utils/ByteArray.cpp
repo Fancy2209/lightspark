@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "SDL_rwops.h"
 #include "scripting/abc.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "asobject.h"
@@ -30,10 +31,10 @@
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/Undefined.h"
 #include "scripting/flash/errors/flasherrors.h"
+#include <cstring>
 #include <sstream>
 #include <zlib.h>
 #include <lzma.h>
-#include <glib.h>
 
 using namespace std;
 using namespace lightspark;
@@ -558,15 +559,15 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeMultiByte)
 	th->lock();
 	if (charset != "utf-8")
 	{
-		gsize bytes_read;
-		gsize bytes_written;
-		gchar* v = g_convert(value.raw_buf(),value.numBytes(),charset.raw_buf(),"utf-8",&bytes_read,&bytes_written,nullptr);
+		size_t bytes_written;
+		char* v = SDL_iconv_string(charset.raw_buf(), "UTF-8", value.raw_buf(), value.numBytes());
 		if (v)
 		{
+			bytes_written = ::strlen(v);
 			th->getBuffer(th->position+bytes_written,true);
 			memcpy(th->bytes+th->position,v,bytes_written);
 			th->position+=bytes_written;
-			g_free(v);
+			free(v);
 		}
 		else
 			LOG(LOG_ERROR,"ByteArray.writeMultiByte charset conversion failed");
@@ -1016,13 +1017,11 @@ ASFUNCTIONBODY_ATOM(ByteArray,readMultiByte)
 	tiny_string res;
 	if (charset != "utf-8" && charset != "utf-8")
 	{
-		gsize bytes_read;
-		gsize bytes_written;
-		gchar* v = g_convert(s,strlen,"utf-8",charset.raw_buf(),&bytes_read,&bytes_written,nullptr);
+		char* v = SDL_iconv_string(charset.raw_buf(), "UTF-8", s, strlen);
 		if (v)
 		{
 			res = tiny_string(v,true);
-			g_free(v);
+			free(v);
 		}
 		else
 			LOG(LOG_ERROR,"ByteArray.readMultiByte charset conversion failed");
@@ -1393,7 +1392,7 @@ void ByteArray::serializeDouble(number_t val)
 {
 	//We have to write the double in network byte order (big endian)
 	const uint64_t* tmpPtr=reinterpret_cast<const uint64_t*>(&val);
-	uint64_t bigEndianVal=GINT64_FROM_BE(*tmpPtr);
+	uint64_t bigEndianVal=LS_UINT64_TO_BE(*tmpPtr);
 	uint8_t* bigEndianPtr=reinterpret_cast<uint8_t*>(&bigEndianVal);
 		
 	for(uint32_t i=0;i<8;i++)

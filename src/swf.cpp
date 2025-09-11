@@ -773,7 +773,7 @@ void SystemState::destroy()
 	if(cookiesFileName)
 	{
 		unlink(cookiesFileName);
-		g_free(cookiesFileName);
+		free(cookiesFileName);
 	}
 	assert(shutdown);
 
@@ -1099,6 +1099,7 @@ void SystemState::createEngines()
 
 void SystemState::launchGnash()
 {
+#if 0
 	Locker l(rootMutex);
 	if(Config::getConfig()->getGnashPath().empty())
 	{
@@ -1247,6 +1248,7 @@ void SystemState::launchGnash()
 	close(gnash_stdin);
 	// Close the SWF file
 	swfStream.close();
+#endif
 }
 
 

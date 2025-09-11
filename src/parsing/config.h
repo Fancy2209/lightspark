@@ -22,7 +22,7 @@
 
 #include <string>
 #include <vector>
-#include <glib.h>
+//#include <glib.h>
 
 namespace lightspark
 {
@@ -30,17 +30,19 @@ namespace lightspark
 	{
 	private:
 		bool valid;
-		GKeyFile* file;
+		void* file;
 
 		char** groups;
-		gsize groupCount;
-		gsize currentGroup;
+		//size_t groupCount;
+		//size_t currentGroup;
 		char** keys;
-		gsize keyCount;
-		gsize currentKey;
+		//size_t keyCount;
+		//size_t currentKey;
 		//Status
 		char* group;
 		char* key;
+		bool stubbool[1] = {false};
+		double stubdouble[1] = {0.0f};
 	public:
 		//Load a config from a file
 		ConfigParser(const std::string& filename);
@@ -56,12 +58,12 @@ namespace lightspark
 		std::string getValue();
 		std::string getValueString();
 		std::vector<std::string> getValueStringList();
-		bool getValueBoolean() { return (bool)g_key_file_get_boolean(file, group, key, NULL); }
-		bool* getValueBooleanList(gsize* length) { return (bool*)g_key_file_get_boolean_list(file, group, key, length, NULL); }
-		int getValueInteger() { return g_key_file_get_integer(file, group, key, NULL); }
-		const int* getValueIntegerList(gsize* length) { return g_key_file_get_integer_list(file, group, key, length, NULL); }
-		double getValueDouble() { return g_key_file_get_double(file, group, key, NULL); }
-		const double* getValueDoubleList(gsize* length) { return g_key_file_get_double_list(file, group, key, length, NULL); }
+		bool getValueBoolean() { return false; }
+		bool* getValueBooleanList(size_t* length) { return stubbool; }
+		int getValueInteger() { return 0; }
+		const int* getValueIntegerList(size_t* length) { return 0; }
+		double getValueDouble() { return 0.0f; }
+		const double* getValueDoubleList(size_t* length) { return stubdouble; }
 	};
 }
 

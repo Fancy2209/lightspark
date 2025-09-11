@@ -18,10 +18,13 @@
 **************************************************************************/
 
 #include "launcher.h"
+#include "SDL_filesystem.h"
+#include "logger.h"
+#include "tiny_string.h"
 #include <SDL.h>
+#include <cstdlib>
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
-#include <glib.h>
 #ifdef ENABLE_GLES2
 #define IMGUI_IMPL_OPENGL_ES2
 #include <imgui_impl_opengl3.h>
@@ -36,6 +39,9 @@
 #include <fstream>
 #include "icon.h"
 #include "backends/lsopengl.h"
+#include "utils/filesystem.h"
+#include "utils/path.h"
+namespace fs = lightspark::FileSystem;
 
 #ifdef __MINGW32__
 #ifndef PATH_MAX
@@ -1291,16 +1297,31 @@ bool Launcher::start()
 	SDL_GL_SetSwapInterval(1); // Enable vsync
 	
 	setWindowIcon(window);
-	std::string settingsfile = g_get_user_config_dir();
-	settingsfile += G_DIR_SEPARATOR_S;
-	settingsfile += "lightspark";
-	settingsfile += G_DIR_SEPARATOR_S;
-	g_mkdir_with_parents(settingsfile.c_str(),0755);
-	settingsfile += "launcher.xml";
-	pugi::xml_document settingsdoc;
-	if (g_file_test(settingsfile.c_str(),G_FILE_TEST_EXISTS))
+
+	Path settingsfile;
+	#ifdef _WIN32
+	settingsfile = getenv("LOCALAPPDATA");
+	#else
+	char *xdgConfigDir = getenv("XDG_CONFIG_HOME");
+	if(xdgConfigDir == NULL)
 	{
-		std::ifstream stream(settingsfile.c_str());
+		char *homeEnv = getenv("HOME");
+		if(homeEnv == NULL)
+			settingsfile = SDL_GetBasePath();
+		else
+			settingsfile = homeEnv;
+		settingsfile /= ".config";
+	} else settingsfile = xdgConfigDir;
+	#endif
+
+	settingsfile /= "lightspark";
+	settingsfile /= "";
+	fs::createDirs(settingsfile,fs::Perms::OwnerAll);
+	settingsfile /= "launcher.xml";
+	pugi::xml_document settingsdoc;
+	if (fs::exists(settingsfile))
+	{
+		std::ifstream stream(settingsfile.getStr());
 		settingsdoc.load(stream);
 	}
 	pugi::xml_node entrylistnode =settingsdoc.root().child("entrylist");
@@ -1447,8 +1468,8 @@ bool Launcher::start()
 				{
 					if (strcmp(entryname,"<empty>")==0)
 					{
-						char* fname = g_path_get_basename(lTheOpenFileName);
-						memcpy(entryname,fname,strlen(fname));
+						tiny_string fname = Path(lTheOpenFileName).getFilename().getStr();
+						memcpy(entryname,fname.raw_buf(),fname.numBytes());
 					}
 					memcpy(swfpath,lTheOpenFileName,strlen(lTheOpenFileName));
 				}
@@ -1482,7 +1503,7 @@ bool Launcher::start()
 						bNeedsNewEntry=true;
 					}
 					// save changed list
-					settingsdoc.save_file(settingsfile.c_str());
+					settingsdoc.save_file(settingsfile.getStr().raw_buf());
 					if (bNeedsNewEntry)
 					{
 						// add new entry at end after saving the current list
@@ -1502,7 +1523,7 @@ bool Launcher::start()
 					// remove last child (it is the empty entry)
 					entrylistnode.remove_child(entrylistnode.last_child());
 					// save changed list
-					settingsdoc.save_file(settingsfile.c_str());
+					settingsdoc.save_file(settingsfile.getStr().raw_buf());
 					// re-add new empty entry at end after saving the current list
 					pugi::xml_node newentry = entrylistnode.append_child("entry");
 					pugi::xml_attribute	attr = newentry.append_attribute("name");

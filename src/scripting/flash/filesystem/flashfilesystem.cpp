@@ -28,7 +28,7 @@
 #include "scripting/argconv.h"
 #include "compat.h"
 #include "platforms/engineutils.h"
-#include <glib.h>
+#include "utils/path.h"
 
 using namespace lightspark;
 
@@ -441,7 +441,7 @@ void ASFile::setupFile(const tiny_string& filename, ASWorker* wrk)
 ASFUNCTIONBODY_ATOM(ASFile,_getURL)
 {
 	ASFile* th=asAtomHandler::as<ASFile>(obj);
-	tiny_string url(g_filename_to_uri(th->path.raw_buf(), nullptr, nullptr));
+	tiny_string url(URLInfo::encode("file://" + std::string(th->path.raw_buf()), URLInfo::ENCODE_URI));
 	ret = asAtomHandler::fromString(wrk->getSystemState(),url);
 }
 ASFUNCTIONBODY_ATOM(ASFile,_setURL)
@@ -481,7 +481,7 @@ ASFUNCTIONBODY_ATOM(ASFile,resolvePath)
 	else
 	{
 		fullpath = th->path;
-		fullpath += G_DIR_SEPARATOR_S;
+		fullpath += Path::nativeSeparator;
 		fullpath += path;
 	}
 	ASFile* res = Class<ASFile>::getInstanceS(wrk,fullpath);
@@ -493,8 +493,8 @@ ASFUNCTIONBODY_ATOM(ASFile,createDirectory)
 	ASFile* th=asAtomHandler::as<ASFile>(obj);
 	tiny_string p = th->path;
 	// ensure that directory name ends with a directory separator
-	if (!p.endsWith(G_DIR_SEPARATOR_S))
-		p += G_DIR_SEPARATOR_S;
+	if (!p.endsWith(Path::nativeSeparator))
+		p += Path::nativeSeparator;
 	
 	if (!wrk->getSystemState()->getEngineData()->FileCreateDirectory(wrk->getSystemState(),p,true))
 		createError<IOError>(wrk,kFileWriteError,th->path);
@@ -505,8 +505,8 @@ ASFUNCTIONBODY_ATOM(ASFile,getDirectoryListing)
 	ASFile* th=asAtomHandler::as<ASFile>(obj);
 	tiny_string p = th->path;
 	// ensure that directory name ends with a directory separator
-	if (!p.endsWith(G_DIR_SEPARATOR_S))
-		p += G_DIR_SEPARATOR_S;
+	if (!p.endsWith(Path::nativeSeparator))
+		p += Path::nativeSeparator;
 	std::vector<tiny_string> dirlist;
 	if (!wrk->getSystemState()->getEngineData()->FilGetDirectoryListing(wrk->getSystemState(),p,true,dirlist))
 	{
